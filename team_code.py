@@ -14,10 +14,8 @@ import numpy as np, os, sys
 import mne
 from sklearn.impute import SimpleImputer
 
-from sklearn.pipeline import make_pipeline
-from sklearn.svm import SVC, SVR
-
-from sklearn.preprocessing import StandardScaler
+from sklearn.neural_network import MLPClassifier
+from sklearn.neural_network import MLPRegressor
 
 import joblib
 
@@ -26,10 +24,6 @@ import joblib
 # Required functions. Edit these functions to add your code, but do not change the arguments of the functions.
 #
 ################################################################################
-
-def print_one(*args):
-    sys.stdout.write(*args)
-    sys.stdout.flush()
 
 # Train your model.
 def train_challenge_model(data_folder, model_folder, verbose):
@@ -59,7 +53,6 @@ def train_challenge_model(data_folder, model_folder, verbose):
         if verbose >= 2:
             print('    {}/{}...'.format(i+1, num_patients))
 
-        print_one("+")
         # Load data.
         patient_id = patient_ids[i]
         patient_metadata, recording_metadata, recording_data = load_challenge_data(data_folder, patient_id)
@@ -73,7 +66,6 @@ def train_challenge_model(data_folder, model_folder, verbose):
         outcomes.append(current_outcome)
         current_cpc = get_cpc(patient_metadata)
         cpcs.append(current_cpc)
-        print_one("-")
     print("\n")
 
     features = np.vstack(features)
@@ -95,12 +87,8 @@ def train_challenge_model(data_folder, model_folder, verbose):
     max_leaf_nodes = 456  # Maximum number of leaf nodes in each tree.
     random_state   = 789  # Random state; set for reproducibility.
 
-    outcome_model = make_pipeline(StandardScaler(), SVC(gamma='auto', probability=True)).fit(features, outcomes.ravel())
-    num_samples = features.shape[0]
-    num_features = features.shape[1]
-    num_output = outcomes.shape[1] + 1
-
-    cpc_model = make_pipeline(StandardScaler(), SVR(C=1.0, epsilon=0.2)).fit(features, cpcs.ravel())
+    outcome_model = MLPClassifier(random_state=random_state, hidden_layer_sizes=(500,), max_iter=1000).fit(features, outcomes.ravel())
+    cpc_model = MLPRegressor(random_state=random_state, max_iter=500).fit(features, cpcs.ravel())
 
     # Save the models.
     save_challenge_model(model_folder, imputer, outcome_model, cpc_model)
